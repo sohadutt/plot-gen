@@ -222,7 +222,7 @@ export function RenderCarousel({ blueprint3dRef, project, captureTopDownSnapshot
     <>
       <div
         className={cn(
-          'pointer-events-auto fixed bottom-4 right-4 z-30 overflow-hidden rounded-xl border border-line bg-surface/95 shadow-panel backdrop-blur-sm transition-all duration-300 ease-out',
+          'pointer-events-auto fixed bottom-20 right-4 z-30 overflow-hidden rounded-xl border border-line bg-surface/95 shadow-panel backdrop-blur-sm transition-all duration-300 ease-out',
           expanded ? 'flex w-[30vw] min-w-[360px] max-w-[560px] flex-col' : 'w-fit'
         )}
         style={expanded ? { maxHeight: '70vh' } : undefined}
@@ -234,7 +234,7 @@ export function RenderCarousel({ blueprint3dRef, project, captureTopDownSnapshot
           onClick={() => setPinned((p) => !p)}
           className="flex w-full shrink-0 items-center gap-2 px-3 py-2 text-left text-sm font-medium text-ink hover:bg-paper"
         >
-          <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+          <Sparkles className="h-6 w-4 shrink-0 text-primary" />
           {!expanded && renders.length > 0 && (
             <div className="flex -space-x-2">
               {renders.slice(0, COLLAPSED_THUMBNAIL_COUNT).map((r) => (
