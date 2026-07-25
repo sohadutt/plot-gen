@@ -1,0 +1,278 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@source "./**/*.{js,jsx}";
+
+/* Dark mode is class-based (`<html class="dark">`), toggled by ThemeProvider. */
+@custom-variant dark (&:is(.dark *));
+
+/* ------------------------------------------------------------------
+   Design tokens — "blueprint" palette, in shadcn/ui's standard
+   CSS-variable shape so every shadcn component (Button, Dialog,
+   Select, Card, ...) is themed automatically, in both light and dark.
+------------------------------------------------------------------ */
+:root {
+  --radius: 0.625rem;
+
+  /* shadcn/ui standard tokens */
+  --background: #f7f7f5;
+  --foreground: #1c1e22;
+  --card: #ffffff;
+  --card-foreground: #1c1e22;
+  --popover: #ffffff;
+  --popover-foreground: #1c1e22;
+  --primary: #2c5aa0;
+  --primary-foreground: #ffffff;
+  --secondary: #eef1f4;
+  --secondary-foreground: #1c1e22;
+  --muted: #eef0f2;
+  --muted-foreground: #6b7280;
+  --accent: #eaf0f9;
+  --accent-foreground: #1c3a63;
+  --destructive: #c1483b;
+  --destructive-foreground: #ffffff;
+  --border: #e2e4e7;
+  --input: #e2e4e7;
+  --ring: #2c5aa0;
+
+  /* project-specific extras, still theme-aware */
+  --success: #2f7a4f;
+  --line-strong: #cbd0d6;
+  --primary-hover: #234a85;
+  --destructive-hover: #a53a2f;
+  --shadow-panel: 0 8px 30px -8px rgb(28 30 34 / 0.18), 0 2px 8px -2px rgb(28 30 34 / 0.08);
+  --shadow-pop: 0 20px 50px -12px rgb(28 30 34 / 0.28);
+}
+
+.dark {
+  --background: #16181c;
+  --foreground: #eef0f2;
+  --card: #1c1f24;
+  --card-foreground: #eef0f2;
+  --popover: #1c1f24;
+  --popover-foreground: #eef0f2;
+  --primary: #6b9bdb;
+  --primary-foreground: #0f1b2e;
+  --secondary: #262a31;
+  --secondary-foreground: #eef0f2;
+  --muted: #212429;
+  --muted-foreground: #9aa1ab;
+  --accent: #202a3a;
+  --accent-foreground: #bcd6f5;
+  --destructive: #e15b4d;
+  --destructive-foreground: #1a0a08;
+  --border: #2b2f36;
+  --input: #2b2f36;
+  --ring: #6b9bdb;
+
+  --success: #4caf75;
+  --line-strong: #3a3f47;
+  --primary-hover: #85ade0;
+  --destructive-hover: #eb7a6c;
+  --shadow-panel: 0 8px 30px -8px rgb(0 0 0 / 0.5), 0 2px 8px -2px rgb(0 0 0 / 0.35);
+  --shadow-pop: 0 20px 50px -12px rgb(0 0 0 / 0.6);
+}
+
+@theme inline {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* shadcn/ui standard color tokens */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+
+  /* "blueprint" aliases — every earlier component was written against these
+     class names (bg-paper, text-ink, border-line, bg-accent, ...); pointing
+     them at the same variables above means those components stay correct
+     and get dark mode for free, with no per-file rewrite needed. */
+  --color-paper: var(--background);
+  --color-ink: var(--foreground);
+  --color-ink-muted: var(--muted-foreground);
+  --color-surface: var(--card);
+  --color-line: var(--border);
+  --color-line-strong: var(--line-strong);
+  --color-accent-hover: var(--primary-hover);
+  --color-accent-soft: var(--accent);
+  --color-accent-foreground: var(--primary-foreground);
+  --color-danger: var(--destructive);
+  --color-danger-hover: var(--destructive-hover);
+  --color-danger-soft: var(--accent);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --shadow-panel: var(--shadow-panel);
+  --shadow-pop: var(--shadow-pop);
+
+  --animate-fade-in: fade-in 0.15s ease-out;
+  --animate-scale-in: scale-in 0.15s ease-out;
+  --animate-slide-in-right: slide-in-right 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+    outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
+  }
+
+  html, body, #root {
+    height: 100%;
+  }
+
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow: hidden;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  button:not([disabled]),
+  [role='button']:not([disabled]) {
+    cursor: pointer;
+  }
+
+  input, select, textarea {
+    font-family: inherit;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--line-strong);
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
+  }
+}
+
+@layer utilities {
+  /* Faint drafting-paper dot grid, used behind the 2D floorplan canvas and auth/dashboard pages */
+  .bg-blueprint-grid {
+    background-color: var(--background);
+    background-image: radial-gradient(var(--line-strong) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Item-loading overlay (referenced directly by id from three.js layer)
+------------------------------------------------------------------ */
+#loading-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: color-mix(in oklab, var(--background) 55%, transparent);
+  backdrop-filter: blur(2px);
+  animation: fade-in 0.2s ease-out;
+}
+
+#loading-modal .loading-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: var(--shadow-panel);
+}
+
+#loading-modal p {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+#loading-modal .loading-dots {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 2px;
+}
+
+#loading-modal .loading-dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background-color: var(--primary);
+  animation: loading-dots 1.4s infinite;
+}
+
+#loading-modal .loading-dots span:nth-child(1) { animation-delay: 0s; }
+#loading-modal .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+#loading-modal .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes loading-dots {
+  0%, 20% { opacity: 0; }
+  40% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+#floorplanner-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
