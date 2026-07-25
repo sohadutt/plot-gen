@@ -12,7 +12,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage'
 import DashboardPage from './pages/DashboardPage'
 import PlannerPage from './pages/PlannerPage'
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
+export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
 function GoogleProviderWrapper({ children }) {
   if (!GOOGLE_CLIENT_ID) {

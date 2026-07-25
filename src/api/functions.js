@@ -502,8 +502,3 @@ export async function fetchRenderById(id) {
 export async function deleteRender(id) {
   await apiClient.delete(ENDPOINTS.RENDER_BY_ID(id))
 }
-
-export async function loginWithGoogle(credential) {
-    const data = await postRequest(ENDPOINTS.GOOGLE_LOGIN, { credential });
-    return persistAuthSession(data);
-}
