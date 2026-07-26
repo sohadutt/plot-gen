@@ -75,11 +75,12 @@ export function ProjectsView({ onOpenFloorplan }) {
     const previous = projects
     setProjects((prev) => prev.map((p) => (p.id === project.id ? { ...p, isPublic } : p)))
     try {
-      await updateFloorplan(project.id, {
+      const updated = await updateFloorplan(project.id, {
         name: project.name,
         roomType: project.roomType,
         isPublic
       })
+      setProjects((prev) => prev.map((p) => (p.id === project.id ? { ...p, ...updated } : p)))
       toast.success(isPublic ? 'Floorplan is now public.' : 'Floorplan is now private.')
     } catch (error) {
       console.error('Failed to update sharing:', error)

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { Compass, Plus, FolderOpen, Home, LayoutGrid } from 'lucide-react'
-import { fetchFloorplans, deleteFloorplan } from '../api/functions'
+import { fetchFloorplans, deleteFloorplan, updateFloorplan } from '../api/functions'
 import { ROOM_TYPES } from '../lib/constants'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/Button'
@@ -50,6 +50,24 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Failed to delete floorplan:', error)
       toast.error('Could not delete floorplan.')
+      setFloorplans(previous)
+    }
+  }
+
+  const handleTogglePublic = async (project, isPublic) => {
+    const previous = floorplans
+    setFloorplans((prev) => prev.map((p) => (p.id === project.id ? { ...p, isPublic } : p)))
+    try {
+      const updated = await updateFloorplan(project.id, {
+        name: project.name,
+        roomType: project.roomType,
+        isPublic
+      })
+      setFloorplans((prev) => prev.map((p) => (p.id === project.id ? { ...p, ...updated } : p)))
+      toast.success(isPublic ? 'Floorplan is now public.' : 'Floorplan is now private.')
+    } catch (error) {
+      console.error('Failed to update sharing:', error)
+      toast.error('Could not update sharing.')
       setFloorplans(previous)
     }
   }
@@ -139,7 +157,7 @@ export default function DashboardPage() {
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {floorplans.slice(0, 8).map((project) => (
-              <ProjectCard key={project.id} project={project} onOpen={handleOpen} onDelete={handleDelete} />
+              <ProjectCard key={project.id} project={project} onOpen={handleOpen} onDelete={handleDelete} onTogglePublic={handleTogglePublic} />
             ))}
           </div>
         )}

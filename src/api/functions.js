@@ -109,6 +109,10 @@ function pruneUndefined(obj) {
   return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined))
 }
 
+function unwrapData(data) {
+  return data?.data ?? data
+}
+
 // ---------------------------------------------------------------------------
 // Adapters — translate between the frontend's field names (camelCase, the
 // shape every component already expects) and the Django backend's field
@@ -409,12 +413,12 @@ export async function fetchFloorplanById(id) {
 
 export async function createFloorplan(payload) {
   const res = await apiClient.post(ENDPOINTS.FLOORPLANS, toFloorplanPayload(payload))
-  return toFloorplanFull(res.data.data)
+  return toFloorplanFull(unwrapData(res.data))
 }
 
 export async function updateFloorplan(id, payload) {
   const res = await apiClient.patch(ENDPOINTS.FLOORPLAN_BY_ID(id), toFloorplanPayload(payload))
-  return toFloorplanFull(res.data.data)
+  return toFloorplanFull(unwrapData(res.data))
 }
 
 export async function deleteFloorplan(id) {
