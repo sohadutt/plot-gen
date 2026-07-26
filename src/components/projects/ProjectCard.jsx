@@ -13,6 +13,7 @@ export function ProjectCard({ project, onOpen, onDelete, onTogglePublic }) {
   const roomLabel = ROOM_TYPES.find((r) => r.value === project.roomType)?.label || project.roomType
 
   const shareUrl = project.shareToken ? `${window.location.origin}/view/${project.shareToken}` : ''
+  const waitingForShareUrl = project.isPublic && !shareUrl
 
   useEffect(() => {
     if (!shareOpen) return
@@ -24,6 +25,7 @@ export function ProjectCard({ project, onOpen, onDelete, onTogglePublic }) {
   }, [shareOpen])
 
   const handleCopyLink = async () => {
+    if (!shareUrl) return
     try {
       await navigator.clipboard.writeText(shareUrl)
       setCopied(true)
@@ -35,9 +37,14 @@ export function ProjectCard({ project, onOpen, onDelete, onTogglePublic }) {
   }
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-lg border border-line bg-surface transition-shadow hover:shadow-sm">
+    <div
+      className={cn(
+        'group relative z-0 flex flex-col overflow-visible rounded-lg border border-line bg-surface transition-shadow hover:z-10 hover:shadow-sm',
+        (shareOpen || confirming) && 'z-20'
+      )}
+    >
       <button onClick={() => onOpen(project)} className="flex flex-col text-left">
-        <div className="flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-paper">
+        <div className="flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-t-lg bg-paper">
           {project.thumbnailUrl ? (
             <img src={project.thumbnailUrl} alt={project.name} className="h-full w-full object-cover" />
           ) : (
@@ -83,27 +90,34 @@ export function ProjectCard({ project, onOpen, onDelete, onTogglePublic }) {
             >
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-sm font-medium text-ink">Public link</span>
-                <Switch checked={!!project.isPublic} onCheckedChange={(checked) => onTogglePublic(project, checked)} />
+                <Switch checked={!!project.isPublic} onCheckedChange={(checked) => onTogglePublic?.(project, checked)} />
               </div>
 
               {project.isPublic ? (
                 <>
                   <p className="mb-2 text-xs text-ink-muted">Anyone with this link can view (not edit) this floorplan.</p>
-                  <div className="flex items-center gap-1">
-                    <input
-                      readOnly
-                      value={shareUrl}
-                      onFocus={(e) => e.target.select()}
-                      className="h-8 flex-1 truncate rounded-md border border-line bg-paper px-2 text-xs text-ink"
-                    />
-                    <button
-                      onClick={handleCopyLink}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-line text-ink-muted hover:bg-paper hover:text-ink"
-                      aria-label="Copy link"
-                    >
-                      {copied ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
-                    </button>
-                  </div>
+                  {waitingForShareUrl ? (
+                    <div className="rounded-md border border-line bg-paper px-2 py-2 text-xs text-ink-muted">
+                      Creating public link...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <input
+                        readOnly
+                        value={shareUrl}
+                        onFocus={(e) => e.target.select()}
+                        className="h-8 min-w-0 flex-1 truncate rounded-md border border-line bg-paper px-2 text-xs text-ink"
+                      />
+                      <button
+                        onClick={handleCopyLink}
+                        disabled={!shareUrl}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-line text-ink-muted hover:bg-paper hover:text-ink disabled:pointer-events-none disabled:opacity-50"
+                        aria-label="Copy link"
+                      >
+                        {copied ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
+                      </button>
+                    </div>
+                  )}
                 </>
               ) : (
                 <p className="text-xs text-ink-muted">Turn this on to get a link anyone can use to view this floorplan.</p>
