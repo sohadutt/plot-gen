@@ -9,13 +9,13 @@ export function ItemsDrawer({ isOpen, onClose, onItemSelect, onAddGenerated }) {
 
       <div
         className={cn(
-          'fixed bottom-0 right-0 top-0 z-50 w-full border-l border-line bg-surface md:w-[380px]',
+          'fixed bottom-0 right-0 top-0 z-50 w-full border-line bg-surface md:w-[380px] md:border-l',
           'transition-transform duration-300 ease-in-out',
           isOpen ? 'translate-x-0' : 'translate-x-full'
         )}
       >
         <div className="flex h-full flex-col">
-          <div className="flex items-center justify-between border-b border-line p-4">
+          <div className="flex items-center justify-between border-b border-line px-4 py-3 md:p-4">
             <h2 className="text-base font-semibold text-ink">Add items</h2>
             <button
               onClick={onClose}
@@ -26,7 +26,7 @@ export function ItemsDrawer({ isOpen, onClose, onItemSelect, onAddGenerated }) {
             </button>
           </div>
 
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden pb-[calc(env(safe-area-inset-bottom)+4.75rem)] md:pb-0">
             <ItemsList onItemSelect={onItemSelect} onAddGenerated={onAddGenerated} />
           </div>
         </div>

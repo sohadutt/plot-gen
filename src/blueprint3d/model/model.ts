@@ -3,9 +3,10 @@ import { Floorplan } from './floorplan'
 import { Scene } from './scene'
 import { EventEmitter } from '../core/events'
 import type { SavedFloorplan } from './floorplan'
-import { Factory, STAIRS_ITEM_TYPE } from '../items/factory'
+import { Factory, STAIRS_ITEM_TYPE, GROUND_PLANE_ITEM_TYPE } from '../items/factory'
 import { createDefaultStairsMaterial } from '../items/generators/stairs'
 import { createDefaultGroundPlaneMaterial } from '../items/generators/ground_plane'
+import { createBooleanCutterMaterial } from '../items/generators/boolean_cutter'
 
 export interface SerializedItem {
   item_name: string
@@ -36,6 +37,8 @@ export interface SerializedItem {
   stairs_params?: { width: number; totalRise: number; totalRun: number; stepCount?: number }
   /** Params for a procedurally-generated GroundPlaneItem (item_type 12). */
   ground_plane_params?: { width: number; depth: number; thickness?: number }
+  /** Params for a procedurally-generated boolean wall cutter (item_type 13/14). */
+  boolean_cutter_params?: { shape: 'cube' | 'cylinder'; width: number; height: number; depth: number }
   /** Solid color for a GroundPlaneItem. */
   color?: string
 }
@@ -125,6 +128,7 @@ export class Model {
         viewer_data: metadata.viewerData,
         stairs_params: metadata.stairsParams,
         ground_plane_params: metadata.groundPlaneParams,
+        boolean_cutter_params: metadata.booleanCutterParams,
         color: metadata.color
       }
     }
@@ -154,6 +158,7 @@ export class Model {
         viewerData: item.viewer_data,
         stairsParams: item.stairs_params,
         groundPlaneParams: item.ground_plane_params,
+        booleanCutterParams: item.boolean_cutter_params,
         color: item.color
       }
       const scale = new THREE.Vector3(item.scale_x, item.scale_y, item.scale_z)
@@ -163,7 +168,11 @@ export class Model {
         // metadata params (see Scene.addGeneratedItem). scale is always
         // (1,1,1) for these, so it's intentionally not passed through here.
         const material =
-          item.item_type === STAIRS_ITEM_TYPE ? createDefaultStairsMaterial() : createDefaultGroundPlaneMaterial()
+          item.item_type === STAIRS_ITEM_TYPE
+            ? createDefaultStairsMaterial()
+            : item.item_type === GROUND_PLANE_ITEM_TYPE
+              ? createDefaultGroundPlaneMaterial()
+              : createBooleanCutterMaterial()
         this.scene.addGeneratedItem(item.item_type, metadata, material, position, item.rotation)
         return
       }

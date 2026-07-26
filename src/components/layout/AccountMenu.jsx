@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router'
-import { LayoutDashboard, LogOut } from 'lucide-react'
+import { LayoutDashboard, LogOut, UserRound } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
-import { Avatar, AvatarFallback } from '../ui/Avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/Avatar'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -30,6 +30,7 @@ export function AccountMenu({ compact }) {
       <DropdownMenuTrigger asChild>
         <button aria-label="Account menu" className="rounded-full transition-opacity hover:opacity-90">
           <Avatar className={compact ? 'h-8 w-8' : 'h-9 w-9'}>
+            {user.avatarUrl && <AvatarImage src={user.avatarUrl} alt={user.name} />}
             <AvatarFallback className={cn(compact && 'text-xs')}>{initial}</AvatarFallback>
           </Avatar>
         </button>
@@ -43,6 +44,10 @@ export function AccountMenu({ compact }) {
         <DropdownMenuItem onClick={() => navigate('/dashboard')}>
           <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
           Dashboard
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate('/profile')}>
+          <UserRound className="h-4 w-4 text-muted-foreground" />
+          Profile
         </DropdownMenuItem>
         <DropdownMenuItem destructive onClick={handleLogout}>
           <LogOut className="h-4 w-4" />

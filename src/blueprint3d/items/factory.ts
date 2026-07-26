@@ -11,6 +11,7 @@ import { WallFloorItem } from './wall_floor_item'
 import { WallItem } from './wall_item'
 import { StairsItem } from './stairs_item'
 import { GroundPlaneItem } from './ground_plane_item'
+import { BooleanWallItem } from './boolean_wall_item'
 
 /** Item constructor type */
 type ItemConstructor = new (
@@ -27,7 +28,14 @@ type ItemConstructor = new (
  * from a model file — see Scene.addGeneratedItem. */
 export const STAIRS_ITEM_TYPE = 11
 export const GROUND_PLANE_ITEM_TYPE = 12
-const GENERATED_ITEM_TYPES = new Set([STAIRS_ITEM_TYPE, GROUND_PLANE_ITEM_TYPE])
+export const BOOLEAN_CUBE_ITEM_TYPE = 13
+export const BOOLEAN_CYLINDER_ITEM_TYPE = 14
+const GENERATED_ITEM_TYPES = new Set([
+  STAIRS_ITEM_TYPE,
+  GROUND_PLANE_ITEM_TYPE,
+  BOOLEAN_CUBE_ITEM_TYPE,
+  BOOLEAN_CYLINDER_ITEM_TYPE
+])
 
 /** Enumeration of item types. */
 const item_types: Record<number, ItemConstructor> = {
@@ -41,7 +49,9 @@ const item_types: Record<number, ItemConstructor> = {
   // Procedurally-generated items (built from metadata params rather than a
   // loaded model file) — see Scene.addGeneratedItem.
   [STAIRS_ITEM_TYPE]: StairsItem,
-  [GROUND_PLANE_ITEM_TYPE]: GroundPlaneItem
+  [GROUND_PLANE_ITEM_TYPE]: GroundPlaneItem,
+  [BOOLEAN_CUBE_ITEM_TYPE]: BooleanWallItem,
+  [BOOLEAN_CYLINDER_ITEM_TYPE]: BooleanWallItem
 }
 
 /** Factory class to create items. */

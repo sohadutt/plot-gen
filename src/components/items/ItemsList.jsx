@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Search, Upload, PackageSearch, Milestone, TrendingUp } from 'lucide-react'
+import { Box, Circle, Search, Upload, PackageSearch, Milestone, TrendingUp } from 'lucide-react'
 import { toast } from 'sonner'
 import { fetchItems } from '../../api/functions'
 import { ITEM_CATEGORIES } from '../../lib/constants'
@@ -53,7 +53,7 @@ export function ItemsList({ onItemSelect, onAddGenerated }) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="space-y-3 border-b border-line p-4">
+      <div className="space-y-3 border-b border-line p-3.5 md:p-4">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
           <Input
@@ -84,25 +84,39 @@ export function ItemsList({ onItemSelect, onAddGenerated }) {
           Upload your own model
         </Button>
 
-        <div className="grid grid-cols-2 gap-1.5">
+        <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => onAddGenerated?.('stairs')}
-            className="flex flex-col items-center gap-1 rounded-md border border-line bg-paper px-2 py-2.5 text-xs font-medium text-ink-muted transition-colors hover:border-primary hover:text-primary"
+            className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-md border border-line bg-paper px-2 py-2.5 text-xs font-medium text-ink-muted transition-colors hover:border-primary hover:text-primary"
           >
             <TrendingUp className="h-4 w-4" />
             Stairs
           </button>
           <button
             onClick={() => onAddGenerated?.('ground-plane')}
-            className="flex flex-col items-center gap-1 rounded-md border border-line bg-paper px-2 py-2.5 text-xs font-medium text-ink-muted transition-colors hover:border-primary hover:text-primary"
+            className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-md border border-line bg-paper px-2 py-2.5 text-xs font-medium text-ink-muted transition-colors hover:border-primary hover:text-primary"
           >
             <Milestone className="h-4 w-4" />
             Road / land
           </button>
+          <button
+            onClick={() => onAddGenerated?.('boolean-cube')}
+            className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-md border border-line bg-paper px-2 py-2.5 text-xs font-medium text-ink-muted transition-colors hover:border-primary hover:text-primary"
+          >
+            <Box className="h-4 w-4" />
+            Cube cut
+          </button>
+          <button
+            onClick={() => onAddGenerated?.('boolean-cylinder')}
+            className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-md border border-line bg-paper px-2 py-2.5 text-xs font-medium text-ink-muted transition-colors hover:border-primary hover:text-primary"
+          >
+            <Circle className="h-4 w-4" />
+            Round cut
+          </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-3.5 md:p-4">
         {loading ? (
           <GridSkeleton count={6} />
         ) : items.length === 0 ? (
@@ -112,7 +126,7 @@ export function ItemsList({ onItemSelect, onAddGenerated }) {
             description={category === 'custom' ? 'Upload a .glb model to get started.' : 'Try a different search or category.'}
           />
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5 md:gap-3">
             {items.map((item) => (
               <ItemCard key={item.id} item={item} onSelect={onItemSelect} onDeleted={handleDeleted} onEdit={setEditingItem} />
             ))}

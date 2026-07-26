@@ -10,10 +10,13 @@ import DefaultFloorplan from '@blueprint3d/templates/default.json'
 import { fetchTemplateByRoomType, fetchFloorplanById, createFloorplan, updateFloorplan, uploadDataUrl } from '../api/functions'
 import { createDefaultStairsMaterial } from '@blueprint3d/items/generators/stairs'
 import { createDefaultGroundPlaneMaterial } from '@blueprint3d/items/generators/ground_plane'
-import { STAIRS_ITEM_TYPE, GROUND_PLANE_ITEM_TYPE } from '@blueprint3d/items/factory'
+import { createBooleanCutterMaterial } from '@blueprint3d/items/generators/boolean_cutter'
+import { STAIRS_ITEM_TYPE, GROUND_PLANE_ITEM_TYPE, BOOLEAN_CUBE_ITEM_TYPE, BOOLEAN_CYLINDER_ITEM_TYPE } from '@blueprint3d/items/factory'
 import { ENDPOINTS } from '../api/urls'
 import { DEFAULT_ROOM_TYPE } from '../lib/constants'
 import { captureTopDownSnapshot } from '../lib/topDownSnapshot'
+import { useIsMobile } from '../hooks/useMediaQuery'
+import { cn } from '../lib/utils'
 
 import { TopNavBar } from '../components/layout/TopNavBar'
 import { FloorplannerControls } from '../components/floorplanner/FloorplannerControls'
@@ -37,6 +40,7 @@ import { SaveFloorplanDialog } from '../components/dialogs/SaveFloorplanDialog'
 export default function PlannerPage() {
   const location = useLocation()
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
 
   const contentRef = useRef(null)
   const viewerRef = useRef(null)
@@ -342,8 +346,22 @@ export default function PlannerPage() {
   const handleAddGeneratedItem = useCallback((kind) => {
     if (!blueprint3dRef.current) return
     const isStairs = kind === 'stairs'
-    const itemType = isStairs ? STAIRS_ITEM_TYPE : GROUND_PLANE_ITEM_TYPE
-    const itemName = isStairs ? 'Stairs' : 'Ground plane'
+    const isGroundPlane = kind === 'ground-plane'
+    const isBooleanCube = kind === 'boolean-cube'
+    const itemType = isStairs
+      ? STAIRS_ITEM_TYPE
+      : isGroundPlane
+        ? GROUND_PLANE_ITEM_TYPE
+        : isBooleanCube
+          ? BOOLEAN_CUBE_ITEM_TYPE
+          : BOOLEAN_CYLINDER_ITEM_TYPE
+    const itemName = isStairs
+      ? 'Stairs'
+      : isGroundPlane
+        ? 'Ground plane'
+        : isBooleanCube
+          ? 'Cube wall cutter'
+          : 'Round wall cutter'
 
     const toastId = toast.loading(`Adding ${itemName}…`)
     // Not a file load — addGeneratedItem is synchronous — but it still
@@ -353,9 +371,27 @@ export default function PlannerPage() {
 
     const metadata = isStairs
       ? { itemName, category: 'stairs', resizable: true, itemType, stairsParams: { width: 100, totalRise: 260, totalRun: 300 } }
-      : { itemName, category: 'ground-plane', resizable: true, itemType, groundPlaneParams: { width: 500, depth: 500 }, color: '#8ba888' }
+      : isGroundPlane
+        ? { itemName, category: 'ground-plane', resizable: true, itemType, groundPlaneParams: { width: 500, depth: 500 }, color: '#8ba888' }
+        : {
+            itemName,
+            category: 'boolean-cutter',
+            resizable: true,
+            itemType,
+            boolean: true,
+            booleanCutterParams: {
+              shape: isBooleanCube ? 'cube' : 'cylinder',
+              width: isBooleanCube ? 90 : 80,
+              height: isBooleanCube ? 90 : 80,
+              depth: 24
+            }
+          }
 
-    const material = isStairs ? createDefaultStairsMaterial() : createDefaultGroundPlaneMaterial()
+    const material = isStairs
+      ? createDefaultStairsMaterial()
+      : isGroundPlane
+        ? createDefaultGroundPlaneMaterial()
+        : createBooleanCutterMaterial()
 
     blueprint3dRef.current.model.checkpoint()
     blueprint3dRef.current.model.scene.addGeneratedItem(itemType, metadata, material)
@@ -563,7 +599,14 @@ export default function PlannerPage() {
           </div>
 
           {selectedItem && !textureType && (
-            <div className="absolute right-2 top-16 z-[70] md:right-4 md:top-20">
+            <div
+              className={cn(
+                'absolute z-[70]',
+                isMobile
+                  ? 'bottom-[calc(env(safe-area-inset-bottom)+5.75rem)] left-3 right-3'
+                  : 'right-4 top-20'
+              )}
+            >
               <ContextMenu
                 selectedItem={selectedItem}
                 onDelete={handleDeleteItem}
@@ -576,7 +619,14 @@ export default function PlannerPage() {
           )}
 
           {textureType && (
-            <div className="absolute right-2 top-16 z-[70] max-h-[calc(100vh-100px)] overflow-y-auto md:right-4 md:top-20 md:max-h-[calc(100vh-120px)]">
+            <div
+              className={cn(
+                'absolute z-[70] overflow-y-auto',
+                isMobile
+                  ? 'bottom-[calc(env(safe-area-inset-bottom)+5.75rem)] left-3 right-3 max-h-[46vh]'
+                  : 'right-4 top-20 max-h-[calc(100vh-120px)]'
+              )}
+            >
               <TextureSelector type={textureType} onTextureSelect={handleTextureSelect} />
             </div>
           )}

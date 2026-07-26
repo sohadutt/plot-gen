@@ -32,6 +32,81 @@ export function TopNavBar({
   const isMobile = useIsMobile()
   const hideChrome = activeTab === 'design' && viewMode === '2d'
 
+  if (isMobile) {
+    return (
+      <div className="relative h-14 pointer-events-none">
+        {!hideChrome && (
+          <div className="absolute left-2 right-2 top-2 flex items-center gap-2 pointer-events-auto">
+            {activeTab === 'design' && (
+              <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface/90 px-2.5 py-1.5 shadow-sm backdrop-blur-sm">
+                <span className={cn('text-xs font-medium', viewMode === '2d' ? 'text-ink' : 'text-ink-muted')}>2D</span>
+                <Switch checked={viewMode === '3d'} onCheckedChange={(checked) => onViewModeChange(checked ? '3d' : '2d')} />
+                <span className={cn('text-xs font-medium', viewMode === '3d' ? 'text-ink' : 'text-ink-muted')}>3D</span>
+              </div>
+            )}
+
+            <div className="ml-auto flex min-w-0 items-center gap-1 overflow-x-auto rounded-full border border-line bg-surface/90 p-1 shadow-sm backdrop-blur-sm scrollbar-none">
+              {activeTab === 'design' && (
+                <>
+                  <Button onClick={onUndo} variant="ghost" size="icon-sm" aria-label="Undo" title="Undo" disabled={!canUndo}>
+                    <Undo2 className="h-4 w-4" />
+                  </Button>
+                  <Button onClick={onRedo} variant="ghost" size="icon-sm" aria-label="Redo" title="Redo" disabled={!canRedo}>
+                    <Redo2 className="h-4 w-4" />
+                  </Button>
+                  <Button onClick={onRoomsClick} variant="ghost" size="icon-sm" aria-label="Rooms" title="Rooms">
+                    <LayoutList className="h-4 w-4" />
+                  </Button>
+                  <Button onClick={onExportClick} variant="ghost" size="icon-sm" aria-label="Export image" title="Export image">
+                    <ImageDown className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
+              <Button onClick={onNew} variant="ghost" size="icon-sm" aria-label="New floorplan" title="New floorplan">
+                <FilePlus className="h-4 w-4" />
+              </Button>
+              <Button onClick={onSave} variant="primary" size="sm" disabled={saving} className="h-8 px-3">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+              </Button>
+              <Button onClick={onSettingsClick} variant="ghost" size="icon-sm" aria-label="Settings" title="Settings">
+                <Settings className="h-4 w-4" />
+              </Button>
+              <ThemeToggle size="icon-sm" variant="ghost" />
+              <AccountMenu compact />
+            </div>
+          </div>
+        )}
+
+        {!hideChrome && (
+          <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] left-1/2 z-[90] flex -translate-x-1/2 gap-1 rounded-full border border-line bg-surface/95 p-1 shadow-pop backdrop-blur-sm pointer-events-auto">
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => onTabChange(tab.id)}
+                className={cn(
+                  'min-w-20 rounded-full px-3 py-2 text-xs font-medium transition-colors',
+                  activeTab === tab.id ? 'bg-primary text-primary-foreground shadow-sm' : 'text-ink-muted hover:bg-paper hover:text-ink'
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {hideChrome && (
+          <div className="absolute left-1/2 top-2 z-[100] -translate-x-1/2 pointer-events-auto">
+            <div className="flex items-center gap-2 rounded-full border border-line bg-surface/90 px-3 py-1.5 shadow-sm backdrop-blur-sm">
+              <span className="text-xs font-medium text-ink">2D</span>
+              <Switch checked={viewMode === '3d'} onCheckedChange={(checked) => onViewModeChange(checked ? '3d' : '2d')} />
+              <span className="text-xs font-medium text-ink-muted">3D</span>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className={cn('relative pointer-events-none', isMobile ? 'h-12' : 'h-14')}>
       {!hideChrome && (

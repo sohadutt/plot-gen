@@ -53,7 +53,7 @@ export function TextureSelector({ type, onTextureSelect }) {
     <div
       className={cn(
         'rounded-lg border border-line bg-surface/95 backdrop-blur-sm shadow-panel animate-slide-in-right',
-        isMobile ? 'p-4 max-w-[280px]' : 'p-3.5 max-w-[240px]'
+        isMobile ? 'w-full p-4' : 'p-3.5 max-w-[240px]'
       )}
     >
       <h3 className={cn('font-semibold text-ink', isMobile ? 'mb-3 text-base' : 'mb-2 text-sm')}>

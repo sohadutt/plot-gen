@@ -3,8 +3,8 @@ import { ThemeToggle } from '../ui/ThemeToggle'
 
 export function AuthLayout({ title, description, children, footer }) {
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center bg-blueprint-grid px-4 py-10">
-      <div className="absolute right-4 top-4">
+    <div className="relative flex min-h-screen w-full items-center justify-center overflow-y-auto bg-blueprint-grid px-4 py-[calc(env(safe-area-inset-top)+2.5rem)] sm:py-10">
+      <div className="absolute right-4 top-[calc(env(safe-area-inset-top)+1rem)] sm:top-4">
         <ThemeToggle />
       </div>
 
@@ -16,7 +16,7 @@ export function AuthLayout({ title, description, children, footer }) {
           <span className="text-lg font-semibold text-ink">Floor Planner</span>
         </div>
 
-        <div className="rounded-lg border border-line bg-surface p-6 shadow-panel">
+        <div className="rounded-lg border border-line bg-surface p-5 shadow-panel sm:p-6">
           <div className="mb-5">
             <h1 className="text-lg font-semibold text-ink">{title}</h1>
             {description && <p className="mt-1 text-sm text-ink-muted">{description}</p>}

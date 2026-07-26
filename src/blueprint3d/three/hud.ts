@@ -93,7 +93,7 @@ export class HUD {
         this.activeObject.rotation.y = item.rotation.y
         this.activeObject.position.x = item.position.x
         this.activeObject.position.z = item.position.z
-        this.activeObject.position.y = this.height
+        this.activeObject.position.y = this.isWallCutter(item) ? item.position.y : this.height
       }
     }
   }
@@ -147,20 +147,34 @@ export class HUD {
       this.activeObject.rotation.y = this.selectedItem.rotation.y
       this.activeObject.position.x = this.selectedItem.position.x
       this.activeObject.position.z = this.selectedItem.position.z
+      this.activeObject.position.y = this.isWallCutter(this.selectedItem) ? this.selectedItem.position.y : this.height
 
       // Reposition resize handles every frame — the item's halfSize changes
       // live while dragging one, so a handle fixed at its creation-time
       // position would drift out of sync with the footprint it represents.
       const halfSize = this.selectedItem.halfSize
       this.resizeHandles.forEach((handle) => {
-        const sign = handle.userData.cornerSign as { x: number; z: number }
-        handle.position.set(
-          sign.x * (halfSize.x + this.resizeHandlePad),
-          0,
-          sign.z * (halfSize.z + this.resizeHandlePad)
-        )
+        if (this.isWallCutter(this.selectedItem!)) {
+          const sign = handle.userData.cornerSign as { x: number; y: number }
+          handle.position.set(
+            sign.x * (halfSize.x + this.resizeHandlePad),
+            sign.y * (halfSize.y + this.resizeHandlePad),
+            0
+          )
+        } else {
+          const sign = handle.userData.cornerSign as { x: number; z: number }
+          handle.position.set(
+            sign.x * (halfSize.x + this.resizeHandlePad),
+            0,
+            sign.z * (halfSize.z + this.resizeHandlePad)
+          )
+        }
       })
     }
+  }
+
+  private isWallCutter(item: Item): boolean {
+    return !!item.metadata.booleanCutterParams
   }
 
   private makeLineGeometry(item: Item): THREE.BufferGeometry {
@@ -232,6 +246,32 @@ export class HUD {
   private makeResizeHandles(item: Item): THREE.Mesh[] {
     const handleSize = 6 * this.scaleFactor
     const geometry = new THREE.BoxGeometry(handleSize, handleSize, handleSize)
+    const makeMaterial = () => new THREE.MeshBasicMaterial({
+      color: this.getResizeColor(),
+      depthTest: !this.isWallCutter(item)
+    })
+
+    if (this.isWallCutter(item)) {
+      const corners: Array<{ x: number; y: number }> = [
+        { x: 1, y: 1 },
+        { x: 1, y: -1 },
+        { x: -1, y: 1 },
+        { x: -1, y: -1 }
+      ]
+
+      return corners.map(({ x, y }) => {
+        const handle = new THREE.Mesh(geometry, makeMaterial())
+        handle.userData.hudPart = 'resize'
+        handle.userData.cornerSign = { x, y }
+        handle.renderOrder = 60
+        handle.position.set(
+          x * (item.halfSize.x + this.resizeHandlePad),
+          y * (item.halfSize.y + this.resizeHandlePad),
+          0
+        )
+        return handle
+      })
+    }
 
     const corners: Array<{ x: number; z: number }> = [
       { x: 1, z: 1 },
@@ -241,8 +281,7 @@ export class HUD {
     ]
 
     return corners.map(({ x, z }) => {
-      const material = new THREE.MeshBasicMaterial({ color: this.getResizeColor() })
-      const handle = new THREE.Mesh(geometry, material)
+      const handle = new THREE.Mesh(geometry, makeMaterial())
       handle.userData.hudPart = 'resize'
       handle.userData.cornerSign = { x, z }
       handle.position.set(
