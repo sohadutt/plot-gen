@@ -54,7 +54,7 @@ export class Controls {
   public allowPageScroll = true
   private touchStartY = 0
   private touchStartX = 0
-  private touchMoveThreshold = 15 // pixels to move before deciding if it's a 3D interaction (increased for better detection)
+  private touchMoveThreshold = 14 // pixels to move before deciding if it's a 3D interaction (increased for better detection)
 
   // Set to true to disable this control
   public noRotate = false
