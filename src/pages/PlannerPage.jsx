@@ -228,7 +228,6 @@ export default function PlannerPage() {
       if (!blueprint3dRef.current) return
       if (mode === '2d') {
         blueprint3dRef.current.floorplanner?.reset()
-        blueprint3dRef.current.floorplanner?.resetOrigin()
       } else {
         blueprint3dRef.current.model.floorplan.update()
         blueprint3dRef.current.three.updateWindowSize()
@@ -269,7 +268,6 @@ export default function PlannerPage() {
           const observer = new ResizeObserver(() => {
             if (blueprint3dRef.current && canvas.clientWidth > 0) {
               blueprint3dRef.current.floorplanner?.reset()
-              blueprint3dRef.current.floorplanner?.resetOrigin()
               observer.disconnect()
             }
           })
@@ -409,6 +407,9 @@ export default function PlannerPage() {
 
   const handleUndo = useCallback(() => blueprint3dRef.current?.model.undo(), [])
   const handleRedo = useCallback(() => blueprint3dRef.current?.model.redo(), [])
+  const handleZoomIn = useCallback(() => blueprint3dRef.current?.floorplanner?.zoomBy(1.25), [])
+  const handleZoomOut = useCallback(() => blueprint3dRef.current?.floorplanner?.zoomBy(0.8), [])
+  const handleFitView = useCallback(() => blueprint3dRef.current?.floorplanner?.fitToView(isMobile ? 76 : 56), [isMobile])
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -588,7 +589,14 @@ export default function PlannerPage() {
             <canvas id="floorplanner-canvas" ref={floorplannerCanvasRef}></canvas>
             {viewMode === '2d' && (
               <>
-                <FloorplannerControls mode={floorplannerMode} onModeChange={handleFloorplannerModeChange} onDone={handleFloorplannerDone} />
+                <FloorplannerControls
+                  mode={floorplannerMode}
+                  onModeChange={handleFloorplannerModeChange}
+                  onDone={handleFloorplannerDone}
+                  onZoomIn={handleZoomIn}
+                  onZoomOut={handleZoomOut}
+                  onFitView={handleFitView}
+                />
                 <ControlsHelp viewMode="2d" />
                 <ZoomIndicator percent={zoomPercent} />
                 {floorplannerMode === 'draw' && <DrawingLengthTooltip info={drawingLength} />}

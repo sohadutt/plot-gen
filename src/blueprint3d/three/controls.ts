@@ -43,7 +43,7 @@ export class Controls {
   public zoomSpeed = 1.0
   // Limits to how far you can dolly in and out
   public minDistance = 0
-  public maxDistance = 1500 //Infinity;
+  public maxDistance = 10000
 
   // Enable/disable wheel zoom (for controlling page scroll vs zoom behavior)
   public enableWheelZoom = true
@@ -647,11 +647,11 @@ export class Controls {
         this.dollyEnd.set(0, distance)
         this.dollyDelta.subVectors(this.dollyEnd, this.dollyStart)
 
-        // Pinch zoom: fingers moving apart = zoom out, fingers moving together = zoom in
+        // Pinch zoom: fingers moving apart = zoom in, fingers moving together = zoom out
         if (this.dollyDelta.y > 0) {
-          this.dollyOut()
-        } else {
           this.dollyIn()
+        } else {
+          this.dollyOut()
         }
 
         this.dollyStart.copy(this.dollyEnd)
