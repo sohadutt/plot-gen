@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useParams, Link } from 'react-router'
-import { Box, Grid3x3, ChevronUp, ChevronDown, X, ImageIcon, Sparkles } from 'lucide-react'
+import { Box, Grid3x3, ChevronUp, ChevronDown, X, ImageIcon, Sparkles, Info } from 'lucide-react'
 import { Blueprint3d } from '../blueprint3d/blueprint3d'
 import { floorplannerModes } from '../blueprint3d/floorplanner/floorplanner_view'
+import { Dimensioning } from '../blueprint3d/core/dimensioning'
 import { fetchPublicFloorplan, fetchPublicRenders } from '../api/functions'
 import { EmptyState, Spinner } from '../components/ui/Feedback'
 import { cn } from '../lib/utils'
@@ -24,6 +25,10 @@ export default function PublicViewerPage() {
   const [renders, setRenders] = useState([])
   const [galleryOpen, setGalleryOpen] = useState(false)
   const [preview, setPreview] = useState(null)
+  
+  // New state for room info
+  const [rooms, setRooms] = useState([])
+  const [infoOpen, setInfoOpen] = useState(false)
 
   useEffect(() => {
     if (!viewerRef.current || blueprint3dRef.current) return
@@ -51,6 +56,15 @@ export default function PublicViewerPage() {
         blueprint3d.three.getController().enabled = false // read-only — no item selection/editing
 
         blueprint3d.model.loadSerialized(JSON.stringify(full.layoutData))
+
+        // Force a layout update to ensure room polygons are calculated, then extract them
+        blueprint3d.model.floorplan.update()
+        const extractedRooms = blueprint3d.model.floorplan.getRooms().map((r) => ({
+          uuid: r.getUuid(),
+          name: r.getName(),
+          area: r.getArea()
+        }))
+        setRooms(extractedRooms)
 
         blueprint3d.three.controls.autoRotate = true
         blueprint3d.three.controls.autoRotateSpeed = AUTO_ROTATE_SPEED
@@ -148,10 +162,39 @@ export default function PublicViewerPage() {
 
       {/* Minimal top bar */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between p-3">
-        <div className="pointer-events-auto rounded-lg border border-line bg-surface/90 px-3 py-1.5 text-sm font-medium text-ink shadow-panel backdrop-blur-sm">
-          {floorplan?.name || 'Floorplan'}
+        
+        {/* Title and Room Info Dropdown */}
+        <div className="pointer-events-auto flex flex-col gap-2">
+          <button
+            onClick={() => setInfoOpen(!infoOpen)}
+            className="flex items-center gap-2 rounded-lg border border-line bg-surface/90 px-3 py-1.5 text-sm font-medium text-ink shadow-panel backdrop-blur-sm transition-colors hover:bg-paper"
+          >
+            <span>{floorplan?.name || 'Floorplan'}</span>
+            <Info className={cn('h-4 w-4 transition-transform', infoOpen ? 'text-primary' : 'text-ink-muted')} />
+          </button>
+
+          {infoOpen && rooms.length > 0 && (
+            <div className="flex w-64 flex-col overflow-hidden rounded-lg border border-line bg-surface/95 shadow-panel backdrop-blur-sm">
+              <div className="border-b border-line px-3 py-2 text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                Rooms ({rooms.length})
+              </div>
+              <div className="flex max-h-[40vh] flex-col overflow-y-auto p-1">
+                {rooms.map((room) => (
+                  <div key={room.uuid} className="flex items-center justify-between rounded px-2 py-1.5 text-sm hover:bg-paper">
+                    <span className="truncate pr-3 font-medium text-ink">
+                      {room.name || 'Unnamed Room'}
+                    </span>
+                    <span className="shrink-0 text-ink-muted">
+                      {Dimensioning.cmSquaredToAreaMeasure(room.area)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
+        {/* View Toggles */}
         <div className="pointer-events-auto flex overflow-hidden rounded-lg border border-line bg-surface/90 shadow-panel backdrop-blur-sm">
           <button
             onClick={() => handleViewChange('3d')}
@@ -207,7 +250,7 @@ export default function PublicViewerPage() {
         </div>
       )}
 
-      {/* AI render gallery — bottom-right, hover to expand, same idea as the editor's carousel */}
+      {/* AI render gallery */}
       {renders.length > 0 && (
         <div
           className={cn(
