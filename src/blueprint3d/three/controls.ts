@@ -232,6 +232,16 @@ export class Controls {
     this.panVector.add(panOffset)
   }
 
+  /** Moves the camera + target straight up/down in world space (positive =
+   * up). Unlike panUp(), which is screen-space pan and deliberately zeroes
+   * out world-Y so tilting the camera doesn't drift its height, this is for
+   * an explicit "move the viewpoint higher/lower" control (e.g. up/down
+   * buttons in a viewer UI). */
+  public panVertical(distance: number): void {
+    this.panVector.y += distance
+    this.update()
+  }
+
   // main entry point; pass in Vector2 of change desired in pixel space,
   // right and down are positive
   public pan(delta: THREE.Vector2): void {

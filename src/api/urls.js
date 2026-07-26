@@ -27,6 +27,7 @@ export const ENDPOINTS = {
   FLOORPLANS: `${API_BASE_URL}/projects/`,
   FLOORPLAN_BY_ID: (id) => `${API_BASE_URL}/projects/${id}/`,
   PUBLIC_FLOORPLAN: (shareToken) => `${API_BASE_URL}/public/projects/${shareToken}/`,
+  PUBLIC_FLOORPLAN_RENDERS: (shareToken) => `${API_BASE_URL}/public/projects/${shareToken}/renders/`,
 
   // Binary uploads — each returns a hosted URL to store on the payload
   // (item.model / item.image / texture.url / floorplan.thumbnailUrl, etc).

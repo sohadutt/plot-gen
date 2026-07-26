@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Search, FolderOpen } from 'lucide-react'
 import { toast } from 'sonner'
-import { fetchFloorplans, fetchFloorplanById, deleteFloorplan } from '../../api/functions'
+import { fetchFloorplans, fetchFloorplanById, deleteFloorplan, updateFloorplan } from '../../api/functions'
 import { ROOM_TYPES } from '../../lib/constants'
 import { Input } from '../ui/Input'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/Select'
@@ -71,6 +71,23 @@ export function ProjectsView({ onOpenFloorplan }) {
     }
   }
 
+  const handleTogglePublic = async (project, isPublic) => {
+    const previous = projects
+    setProjects((prev) => prev.map((p) => (p.id === project.id ? { ...p, isPublic } : p)))
+    try {
+      await updateFloorplan(project.id, {
+        name: project.name,
+        roomType: project.roomType,
+        isPublic
+      })
+      toast.success(isPublic ? 'Floorplan is now public.' : 'Floorplan is now private.')
+    } catch (error) {
+      console.error('Failed to update sharing:', error)
+      toast.error('Could not update sharing.')
+      setProjects(previous)
+    }
+  }
+
   return (
     <div className="h-full overflow-y-auto bg-blueprint-grid pt-20">
       <div className="mx-auto w-full max-w-5xl px-5 pb-10">
@@ -121,7 +138,7 @@ export function ProjectsView({ onOpenFloorplan }) {
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {projects.map((project) => (
-              <ProjectCard key={project.id} project={project} onOpen={handleOpen} onDelete={handleDelete} />
+              <ProjectCard key={project.id} project={project} onOpen={handleOpen} onDelete={handleDelete} onTogglePublic={handleTogglePublic} />
             ))}
           </div>
         )}

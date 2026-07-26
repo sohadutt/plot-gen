@@ -8,6 +8,7 @@ import { Button } from '../ui/Button'
 import { GridSkeleton, EmptyState } from '../ui/Feedback'
 import { ItemCard } from './ItemCard'
 import { UploadItemDialog } from './UploadItemDialog'
+import { EditItemDialog } from './EditItemDialog'
 import { cn } from '../../lib/utils'
 
 export function ItemsList({ onItemSelect, onAddGenerated }) {
@@ -16,6 +17,7 @@ export function ItemsList({ onItemSelect, onAddGenerated }) {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('all')
   const [uploadOpen, setUploadOpen] = useState(false)
+  const [editingItem, setEditingItem] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -43,6 +45,10 @@ export function ItemsList({ onItemSelect, onAddGenerated }) {
 
   const handleDeleted = (id) => {
     setItems((prev) => prev.filter((item) => item.id !== id))
+  }
+
+  const handleUpdated = (updated) => {
+    setItems((prev) => prev.map((item) => (item.id === updated.id ? updated : item)))
   }
 
   return (
@@ -108,13 +114,14 @@ export function ItemsList({ onItemSelect, onAddGenerated }) {
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {items.map((item) => (
-              <ItemCard key={item.id} item={item} onSelect={onItemSelect} onDeleted={handleDeleted} />
+              <ItemCard key={item.id} item={item} onSelect={onItemSelect} onDeleted={handleDeleted} onEdit={setEditingItem} />
             ))}
           </div>
         )}
       </div>
 
       <UploadItemDialog open={uploadOpen} onOpenChange={setUploadOpen} onUploaded={handleUploaded} />
+      <EditItemDialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)} item={editingItem} onUpdated={handleUpdated} />
     </div>
   )
 }

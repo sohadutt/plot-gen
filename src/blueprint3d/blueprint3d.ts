@@ -19,6 +19,11 @@ export interface Options {
   /** Enable/disable wheel zoom (default: true). Set to false for logged-out users to allow page scroll. */
   enableWheelZoom?: boolean
 
+  /** Auto-rotate on idle, pausing on hover and permanently once clicked (default: true).
+   * Set to false to manage rotation yourself via `three.controls.autoRotate` instead —
+   * e.g. a toggle with no permanent lock, for a standalone viewer. */
+  spin?: boolean
+
   /** Enable continuous rotation even after user interaction (default: false). */
   alwaysSpin?: boolean
 }
@@ -38,6 +43,7 @@ export class Blueprint3d {
     this.model = new Model(options.textureDir || '')
     this.three = new Main(this.model, options.threeElement || document.body, undefined, {
       enableWheelZoom: options.enableWheelZoom ?? true,
+      spin: options.spin ?? true,
       alwaysSpin: options.alwaysSpin ?? false
     })
 

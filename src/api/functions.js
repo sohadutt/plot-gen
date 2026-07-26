@@ -141,7 +141,8 @@ function toItem(m) {
     image: m.thumbnail_url,
     model: m.file_url,
     boolean: m.is_boolean,
-    isCustom: !m.is_public,
+    isPublic: m.is_public,
+    isCustom: !!m.is_owner,
     viewerData: m.viewer_data && Object.keys(m.viewer_data).length ? m.viewer_data : undefined,
     createdAt: m.created_at ? new Date(m.created_at).getTime() : undefined
   }
@@ -157,7 +158,7 @@ function toItemPayload(item) {
     is_boolean: item.boolean,
     item_type: item.type != null ? Number(item.type) : undefined,
     viewer_data: item.viewerData,
-    is_public: false
+    is_public: item.isPublic ?? false
   })
 }
 
@@ -173,7 +174,8 @@ function toTexture(t) {
     isColor: t.is_color,
     color: typeof t.rgb_color === 'string' ? t.rgb_color : t.rgb_color?.hex,
     glossy: t.glossy,
-    isCustom: !t.is_public
+    isPublic: t.is_public,
+    isCustom: !!t.is_owner
   }
 }
 
@@ -189,7 +191,7 @@ function toTexturePayload(payload) {
     stretch: isColor ? undefined : payload.stretch,
     scale: payload.scale,
     glossy: payload.glossy,
-    is_public: false
+    is_public: payload.isPublic ?? false
   })
 }
 
@@ -340,6 +342,17 @@ export async function createItem(item) {
   return toItem(res.data.data)
 }
 
+/** Partial update — pass only the fields you want to change, e.g.
+ * updateItem(id, { name, isPublic }). */
+export async function updateItem(id, updates) {
+  const res = await apiClient.patch(ENDPOINTS.ITEM_BY_ID(id), pruneUndefined({
+    name: updates.name,
+    description: updates.description,
+    is_public: updates.isPublic
+  }))
+  return toItem(res.data)
+}
+
 export async function deleteItem(id) {
   await apiClient.delete(ENDPOINTS.ITEM_BY_ID(id))
 }
@@ -411,6 +424,13 @@ export async function deleteFloorplan(id) {
 export async function fetchPublicFloorplan(shareToken) {
   const res = await axios.get(ENDPOINTS.PUBLIC_FLOORPLAN(shareToken))
   return toFloorplanFull(res.data)
+}
+
+/** Completed AI renders for a publicly-shared floorplan — already in
+ * {id, roomLabel, angle, resultImageUrl} shape, no adapter needed. */
+export async function fetchPublicRenders(shareToken) {
+  const res = await axios.get(ENDPOINTS.PUBLIC_FLOORPLAN_RENDERS(shareToken))
+  return res.data
 }
 
 // ---------------------------------------------------------------------------

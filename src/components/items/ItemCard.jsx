@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { Trash2, Scissors } from 'lucide-react'
+import { Trash2, Scissors, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import { deleteItem } from '../../api/functions'
 import { cn } from '../../lib/utils'
 
-export function ItemCard({ item, onSelect, onDeleted }) {
+export function ItemCard({ item, onSelect, onDeleted, onEdit }) {
   const [deleting, setDeleting] = useState(false)
 
   const handleDelete = async (e) => {
@@ -50,14 +50,32 @@ export function ItemCard({ item, onSelect, onDeleted }) {
       )}
 
       {item.isCustom && (
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          aria-label="Delete uploaded item"
-          className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-md bg-surface/90 text-danger opacity-0 shadow-sm transition-opacity group-hover:opacity-100 hover:bg-danger-soft"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+        <div className="absolute right-1.5 top-1.5 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onEdit(item)
+            }}
+            aria-label="Edit item"
+            className="flex h-6 w-6 items-center justify-center rounded-md bg-surface/90 text-ink-muted shadow-sm hover:bg-paper hover:text-ink"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            aria-label="Delete uploaded item"
+            className="flex h-6 w-6 items-center justify-center rounded-md bg-surface/90 text-danger shadow-sm hover:bg-danger-soft"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
+      {item.isCustom && item.isPublic && (
+        <span className="absolute bottom-1.5 left-1.5 rounded bg-surface/90 px-1.5 py-0.5 text-[9px] font-medium text-primary shadow-sm">
+          Public
+        </span>
       )}
     </button>
   )

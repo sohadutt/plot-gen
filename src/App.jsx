@@ -11,6 +11,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import DashboardPage from './pages/DashboardPage'
 import PlannerPage from './pages/PlannerPage'
+import PublicViewerPage from './pages/PublicViewerPage'
 
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
@@ -83,6 +84,8 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
+            <Route path="/view/:shareToken" element={<PublicViewerPage />} />
 
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

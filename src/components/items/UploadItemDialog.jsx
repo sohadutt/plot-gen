@@ -23,6 +23,7 @@ export function UploadItemDialog({ open, onOpenChange, onUploaded }) {
   const [name, setName] = useState('')
   const [category, setCategory] = useState('table')
   const [booleanCut, setBooleanCut] = useState(false)
+  const [isPublic, setIsPublic] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [progress, setProgress] = useState(0)
 
@@ -33,6 +34,7 @@ export function UploadItemDialog({ open, onOpenChange, onUploaded }) {
     setName('')
     setCategory('table')
     setBooleanCut(false)
+    setIsPublic(false)
     setProgress(0)
   }
 
@@ -78,7 +80,8 @@ export function UploadItemDialog({ open, onOpenChange, onUploaded }) {
         type: getItemTypeForCategory(category),
         model: modelUpload.url,
         image: imageUpload?.url || null,
-        boolean: booleanCut
+        boolean: booleanCut,
+        isPublic
       })
 
       toast.success(`${name.trim()} added to your catalog.`)
@@ -172,6 +175,16 @@ export function UploadItemDialog({ open, onOpenChange, onUploaded }) {
               <Switch checked={booleanCut} onCheckedChange={setBooleanCut} />
             </div>
           )}
+
+          <div className="flex items-center justify-between rounded-md border border-line px-3 py-2.5">
+            <div>
+              <p className="text-sm text-ink">Make it public</p>
+              <p className="text-xs text-ink-muted">
+                {isPublic ? 'Anyone can browse and use this in their own floorplans.' : 'Only visible to you, under "My Uploads".'}
+              </p>
+            </div>
+            <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+          </div>
 
           {submitting && progress > 0 && (
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-line">
