@@ -18,7 +18,7 @@ export function LoadingState({ label = 'Loading…' }) {
 /** A grid of card-shaped skeletons, for catalog/project grids while their first fetch is in flight. */
 export function GridSkeleton({ count = 6, className }) {
   return (
-    <div className={cn('grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4', className)}>
+    <div className={cn('grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4', className)}>
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="overflow-hidden rounded-lg border border-line">
           <Skeleton className="aspect-square w-full rounded-none" />

@@ -1,14 +1,20 @@
 import { useState, useRef, useEffect } from 'react'
-import { Trash2, Home, Share2, Check, Copy } from 'lucide-react'
+import { Trash2, Home, Share2, Check, Copy, Pencil, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { ROOM_TYPES } from '../../lib/constants'
 import { formatRelativeTime, cn } from '../../lib/utils'
 import { Switch } from '../ui/Switch'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/Dialog'
+import { Input } from '../ui/Input'
+import { Button } from '../ui/Button'
 
-export function ProjectCard({ project, onOpen, onDelete, onTogglePublic }) {
+export function ProjectCard({ project, onOpen, onDelete, onTogglePublic, onRename }) {
   const [confirming, setConfirming] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [renameOpen, setRenameOpen] = useState(false)
+  const [draftName, setDraftName] = useState(project.name)
+  const [renaming, setRenaming] = useState(false)
   const shareRef = useRef(null)
   const roomLabel = ROOM_TYPES.find((r) => r.value === project.roomType)?.label || project.roomType
 
@@ -36,6 +42,23 @@ export function ProjectCard({ project, onOpen, onDelete, onTogglePublic }) {
     }
   }
 
+  const handleRename = async (event) => {
+    event.preventDefault()
+    const nextName = draftName.trim()
+    if (!nextName || nextName === project.name) {
+      setRenameOpen(false)
+      return
+    }
+
+    setRenaming(true)
+    try {
+      await onRename?.(project, nextName)
+      setRenameOpen(false)
+    } finally {
+      setRenaming(false)
+    }
+  }
+
   return (
     <div
       className={cn(
@@ -51,9 +74,9 @@ export function ProjectCard({ project, onOpen, onDelete, onTogglePublic }) {
             <Home className="h-8 w-8 text-line-strong" strokeWidth={1.5} />
           )}
         </div>
-        <div className="p-3">
+        <div className="p-3 sm:p-3">
           <p className="truncate text-sm font-medium text-ink">{project.name}</p>
-          <div className="mt-1 flex items-center gap-1.5 text-xs text-ink-muted">
+          <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-ink-muted">
             <span>{roomLabel}</span>
             <span>·</span>
             <span>{formatRelativeTime(project.updatedAt)}</span>
@@ -67,7 +90,22 @@ export function ProjectCard({ project, onOpen, onDelete, onTogglePublic }) {
         </div>
       </button>
 
-      <div className="absolute right-2 top-2 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100" style={shareOpen || confirming ? { opacity: 1 } : undefined}>
+      <div className="absolute right-2 top-2 flex items-center gap-1.5 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100" style={shareOpen || confirming || renameOpen ? { opacity: 1 } : undefined}>
+        {onRename && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setDraftName(project.name)
+              setRenameOpen(true)
+            }}
+            aria-label="Rename project"
+            title="Rename project"
+            className="flex h-8 w-8 items-center justify-center rounded-md bg-surface/90 text-ink-muted shadow-sm transition-colors hover:bg-paper hover:text-ink md:h-7 md:w-7"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+        )}
+
         <div ref={shareRef} className="relative">
           <button
             onClick={(e) => {
@@ -76,7 +114,7 @@ export function ProjectCard({ project, onOpen, onDelete, onTogglePublic }) {
             }}
             aria-label="Share floorplan"
             className={cn(
-              'flex h-7 w-7 items-center justify-center rounded-md shadow-sm transition-colors',
+              'flex h-8 w-8 items-center justify-center rounded-md shadow-sm transition-colors md:h-7 md:w-7',
               project.isPublic ? 'bg-primary text-white' : 'bg-surface/90 text-ink-muted hover:bg-paper'
             )}
           >
@@ -138,7 +176,7 @@ export function ProjectCard({ project, onOpen, onDelete, onTogglePublic }) {
           }}
           aria-label="Delete floorplan"
           className={cn(
-            'flex h-7 items-center gap-1 rounded-md px-2 text-xs font-medium shadow-sm transition-colors',
+            'flex h-8 items-center gap-1 rounded-md px-2 text-xs font-medium shadow-sm transition-colors md:h-7',
             confirming ? 'bg-danger text-white' : 'bg-surface/90 text-danger hover:bg-danger-soft'
           )}
         >
@@ -146,6 +184,31 @@ export function ProjectCard({ project, onOpen, onDelete, onTogglePublic }) {
           {confirming && 'Confirm'}
         </button>
       </div>
+
+      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Rename project</DialogTitle>
+            <DialogDescription>Update the project name shown in your workspace.</DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleRename}>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-ink-muted">Name</span>
+              <Input value={draftName} onChange={(event) => setDraftName(event.target.value)} autoFocus />
+            </label>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setRenameOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" disabled={renaming || !draftName.trim()}>
+                {renaming ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Rename'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

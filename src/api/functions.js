@@ -125,10 +125,10 @@ function toUser(u) {
     id: u.id,
     username: u.username,
     email: u.email,
-    name: u.display_name || u.username,
+    name: u.display_name || u.name || u.username,
     firstName: u.first_name || '',
     lastName: u.last_name || '',
-    avatarUrl: u.profile_picture_url || null,
+    avatarUrl: u.profile_picture_url || u.avatarUrl || null,
     tier: u.tier,
     isVerified: u.is_verified
   }
@@ -311,11 +311,23 @@ export async function fetchCurrentUser() {
 }
 
 export async function updateProfile(updates) {
+  if (updates.avatarFile) {
+    const formData = new FormData()
+    if (updates.firstName !== undefined) formData.append('first_name', updates.firstName)
+    if (updates.lastName !== undefined) formData.append('last_name', updates.lastName)
+    formData.append('profile_picture', updates.avatarFile)
+
+    const res = await apiClient.patch(ENDPOINTS.AUTH_ME, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    return toUser(unwrapData(res.data))
+  }
+
   const res = await apiClient.patch(ENDPOINTS.AUTH_ME, pruneUndefined({
     first_name: updates.firstName,
     last_name: updates.lastName
   }))
-  return toUser(res.data.data)
+  return toUser(unwrapData(res.data))
 }
 
 export async function requestPasswordReset(email) {

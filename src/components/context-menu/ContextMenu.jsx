@@ -73,7 +73,7 @@ export function ContextMenu({ selectedItem, onDelete, onResize, onResizeStart, o
     <div
       className={cn(
         'rounded-lg border border-line bg-surface/95 backdrop-blur-sm shadow-panel animate-slide-in-right',
-        isMobile ? 'p-4 max-w-[320px]' : 'p-3.5 max-w-[280px]'
+        isMobile ? 'w-full p-4' : 'p-3.5 max-w-[280px]'
       )}
     >
       <div className="mb-3 flex items-center justify-between gap-2">

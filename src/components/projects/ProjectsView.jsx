@@ -89,12 +89,28 @@ export function ProjectsView({ onOpenFloorplan }) {
     }
   }
 
+  const handleRename = async (project, name) => {
+    const previous = projects
+    setProjects((prev) => prev.map((p) => (p.id === project.id ? { ...p, name } : p)))
+    try {
+      const updated = await updateFloorplan(project.id, { name })
+      setProjects((prev) => prev.map((p) => (p.id === project.id ? { ...p, ...updated } : p)))
+      toast.success('Project renamed.')
+      return updated
+    } catch (error) {
+      console.error('Failed to rename project:', error)
+      toast.error('Could not rename project.')
+      setProjects(previous)
+      throw error
+    }
+  }
+
   return (
     <div className="h-full overflow-y-auto bg-blueprint-grid pt-20">
-      <div className="mx-auto w-full max-w-5xl px-5 pb-10">
+      <div className="mx-auto w-full max-w-5xl px-4 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:px-5 sm:pb-10">
         <h1 className="mb-4 text-xl font-semibold text-ink">My floorplans</h1>
 
-        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="mb-5 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search floorplans…" className="bg-surface pl-9" />
@@ -129,7 +145,7 @@ export function ProjectsView({ onOpenFloorplan }) {
         </div>
 
         {loading ? (
-          <GridSkeleton count={8} />
+          <GridSkeleton count={8} className="grid-cols-1 min-[420px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4" />
         ) : projects.length === 0 ? (
           <EmptyState
             icon={FolderOpen}
@@ -137,9 +153,9 @@ export function ProjectsView({ onOpenFloorplan }) {
             description="Design something in the Design tab, then hit Save to see it here."
           />
         ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
             {projects.map((project) => (
-              <ProjectCard key={project.id} project={project} onOpen={handleOpen} onDelete={handleDelete} onTogglePublic={handleTogglePublic} />
+              <ProjectCard key={project.id} project={project} onOpen={handleOpen} onDelete={handleDelete} onTogglePublic={handleTogglePublic} onRename={handleRename} />
             ))}
           </div>
         )}

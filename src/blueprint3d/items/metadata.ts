@@ -51,8 +51,10 @@ export interface Metadata {
   /** Params for a procedurally-generated GroundPlaneItem — see items/generators/ground_plane.ts. */
   groundPlaneParams?: { width: number; depth: number; thickness?: number }
 
+  /** Params for an invisible wall boolean cutter — see items/generators/boolean_cutter.ts. */
+  booleanCutterParams?: { shape: 'cube' | 'cylinder'; width: number; height: number; depth: number }
+
   /** Solid color for a GroundPlaneItem (hex string, e.g. '#8ba888'). Falls back to a
    * neutral land-green when unset. */
   color?: string
 }
-

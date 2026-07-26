@@ -291,19 +291,35 @@ export class Edge {
       const pos = item.position.clone()
       pos.applyMatrix4(transform)
       const halfSize = item.halfSize
-      const min = halfSize.clone().multiplyScalar(-1)
-      const max = halfSize.clone()
-      min.add(pos)
-      max.add(pos)
+      if (item.metadata?.booleanCutterParams?.shape === 'cylinder') {
+        const hole = new THREE.Path()
+        const segments = 48
+        const points: THREE.Vector2[] = []
+        for (let i = 0; i < segments; i++) {
+          const theta = (i / segments) * Math.PI * 2
+          points.push(new THREE.Vector2(
+            pos.x + Math.cos(theta) * halfSize.x,
+            pos.y + Math.sin(theta) * halfSize.y
+          ))
+        }
+        hole.setFromPoints(points)
+        hole.closePath()
+        shape.holes.push(hole)
+      } else {
+        const min = halfSize.clone().multiplyScalar(-1)
+        const max = halfSize.clone()
+        min.add(pos)
+        max.add(pos)
 
-      const holePoints = [
-        new THREE.Vector2(min.x, min.y),
-        new THREE.Vector2(max.x, min.y),
-        new THREE.Vector2(max.x, max.y),
-        new THREE.Vector2(min.x, max.y)
-      ]
+        const holePoints = [
+          new THREE.Vector2(min.x, min.y),
+          new THREE.Vector2(max.x, min.y),
+          new THREE.Vector2(max.x, max.y),
+          new THREE.Vector2(min.x, max.y)
+        ]
 
-      shape.holes.push(new THREE.Path(holePoints))
+        shape.holes.push(new THREE.Path(holePoints))
+      }
     })
 
     const geometry = new THREE.ShapeGeometry(shape)
