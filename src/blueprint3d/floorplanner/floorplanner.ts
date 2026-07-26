@@ -34,10 +34,13 @@ const defaultCmPerPixel = 30.48 / 15.0
 
 /** how far you can zoom in/out, as a multiple of the default scale */
 const minCmPerPixel = defaultCmPerPixel / 6 // most zoomed in
-const maxCmPerPixel = defaultCmPerPixel * 8 // most zoomed out
+const maxCmPerPixel = defaultCmPerPixel * 24 // most zoomed out
 
 /** how much each wheel "click" changes the zoom level */
 const zoomSensitivity = 0.0018
+
+/** Small finger drift still counts as a tap for draw/cut/measure gestures. */
+const touchTapSlopPixels = 8
 
 /** Info describing the wall segment currently being drawn, for the on-screen length readout. */
 export interface DrawingLengthInfo {
@@ -182,6 +185,14 @@ export class Floorplanner {
   /** mouse position at last click */
   private lastY = 0
 
+  private touchMode: 'single' | 'pinch' | null = null
+  private touchStartX = 0
+  private touchStartY = 0
+  private touchStartDistance = 0
+  private touchStartCmPerPixel = defaultCmPerPixel
+  private touchPinchWorldX = 0
+  private touchPinchWorldY = 0
+
   /** */
   private cmPerPixel: number
 
@@ -250,6 +261,34 @@ export class Floorplanner {
       'wheel',
       (event: WheelEvent) => {
         this.mousewheel(event)
+      },
+      { passive: false }
+    )
+    this.canvasElement.addEventListener(
+      'touchstart',
+      (event: TouchEvent) => {
+        this.touchstart(event)
+      },
+      { passive: false }
+    )
+    this.canvasElement.addEventListener(
+      'touchmove',
+      (event: TouchEvent) => {
+        this.touchmove(event)
+      },
+      { passive: false }
+    )
+    this.canvasElement.addEventListener(
+      'touchend',
+      (event: TouchEvent) => {
+        this.touchend(event)
+      },
+      { passive: false }
+    )
+    this.canvasElement.addEventListener(
+      'touchcancel',
+      (event: TouchEvent) => {
+        this.touchend(event)
       },
       { passive: false }
     )
@@ -756,15 +795,19 @@ export class Floorplanner {
 
   /** */
   private mousemove(event: MouseEvent): void {
-    this.mouseMoved = true
+    this.pointermove(event.clientX, event.clientY, true)
+  }
 
-    // update mouse
-    this.rawMouseX = event.clientX
-    this.rawMouseY = event.clientY
+  /** Shared pointer movement for mouse and touch input. */
+  private pointermove(clientX: number, clientY: number, markMoved: boolean): void {
+    if (markMoved) this.mouseMoved = true
+
+    this.rawMouseX = clientX
+    this.rawMouseY = clientY
 
     const rect = this.canvasElement.getBoundingClientRect()
-    this.mouseX = (event.clientX - rect.left) * this.cmPerPixel + this.originX * this.cmPerPixel
-    this.mouseY = (event.clientY - rect.top) * this.cmPerPixel + this.originY * this.cmPerPixel
+    this.mouseX = (clientX - rect.left) * this.cmPerPixel + this.originX * this.cmPerPixel
+    this.mouseY = (clientY - rect.top) * this.cmPerPixel + this.originY * this.cmPerPixel
 
     // update object hover (corner/wall) — must run before target/cut-preview below, since
     // CUT mode's preview depends on activeWall being current for this frame
@@ -834,6 +877,111 @@ export class Floorplanner {
     }
   }
 
+  private touchstart(event: TouchEvent): void {
+    if (event.touches.length === 1) {
+      const touch = event.touches[0]
+      event.preventDefault()
+      this.touchMode = 'single'
+      this.touchStartX = touch.clientX
+      this.touchStartY = touch.clientY
+      this.pointermove(touch.clientX, touch.clientY, false)
+      this.mousedown()
+    } else if (event.touches.length === 2) {
+      event.preventDefault()
+      this.startPinch(event)
+    }
+  }
+
+  private touchmove(event: TouchEvent): void {
+    if (event.touches.length === 2) {
+      event.preventDefault()
+      if (this.touchMode !== 'pinch') this.startPinch(event)
+      this.updatePinch(event)
+      return
+    }
+
+    if (event.touches.length !== 1 || this.touchMode !== 'single') return
+
+    const touch = event.touches[0]
+    event.preventDefault()
+    const dx = touch.clientX - this.touchStartX
+    const dy = touch.clientY - this.touchStartY
+    const moved = Math.sqrt(dx * dx + dy * dy) > touchTapSlopPixels
+    if (!moved) {
+      const wasMouseDown = this.mouseDown
+      this.mouseDown = false
+      this.pointermove(touch.clientX, touch.clientY, false)
+      this.mouseDown = wasMouseDown
+      return
+    }
+
+    this.pointermove(touch.clientX, touch.clientY, moved)
+  }
+
+  private touchend(event: TouchEvent): void {
+    event.preventDefault()
+
+    if (this.touchMode === 'single') {
+      this.mouseup()
+    } else {
+      this.mouseDown = false
+    }
+
+    this.touchMode = null
+    if (event.touches.length === 1) {
+      const touch = event.touches[0]
+      this.touchMode = 'single'
+      this.touchStartX = touch.clientX
+      this.touchStartY = touch.clientY
+      this.pointermove(touch.clientX, touch.clientY, false)
+      this.mousedown()
+    }
+  }
+
+  private startPinch(event: TouchEvent): void {
+    const distance = this.getTouchDistance(event)
+    const center = this.getTouchCenter(event)
+    const rect = this.canvasElement.getBoundingClientRect()
+    const screenX = center.x - rect.left
+    const screenY = center.y - rect.top
+
+    this.mouseDown = false
+    this.touchMode = 'pinch'
+    this.touchStartDistance = distance
+    this.touchStartCmPerPixel = this.cmPerPixel
+    this.touchPinchWorldX = (screenX + this.originX) * this.cmPerPixel
+    this.touchPinchWorldY = (screenY + this.originY) * this.cmPerPixel
+  }
+
+  private updatePinch(event: TouchEvent): void {
+    if (this.touchStartDistance <= 0) return
+
+    const distance = this.getTouchDistance(event)
+    const center = this.getTouchCenter(event)
+    const rect = this.canvasElement.getBoundingClientRect()
+    const screenX = center.x - rect.left
+    const screenY = center.y - rect.top
+    const newCmPerPixel = this.touchStartCmPerPixel * (this.touchStartDistance / distance)
+
+    this.setZoomLevel(newCmPerPixel)
+    this.originX = this.touchPinchWorldX / this.cmPerPixel - screenX
+    this.originY = this.touchPinchWorldY / this.cmPerPixel - screenY
+    this.view.draw()
+  }
+
+  private getTouchDistance(event: TouchEvent): number {
+    const dx = event.touches[0].clientX - event.touches[1].clientX
+    const dy = event.touches[0].clientY - event.touches[1].clientY
+    return Math.sqrt(dx * dx + dy * dy)
+  }
+
+  private getTouchCenter(event: TouchEvent): SimplePoint {
+    return {
+      x: (event.touches[0].clientX + event.touches[1].clientX) / 2,
+      y: (event.touches[0].clientY + event.touches[1].clientY) / 2
+    }
+  }
+
   /** */
   private mouseup(): void {
     this.mouseDown = false
@@ -879,6 +1027,17 @@ export class Floorplanner {
     return { deltaX: event.deltaX * factor, deltaY: event.deltaY * factor }
   }
 
+  private setZoomLevel(cmPerPixel: number): boolean {
+    const newCmPerPixel = Math.min(Math.max(cmPerPixel, minCmPerPixel), maxCmPerPixel)
+    if (newCmPerPixel === this.cmPerPixel) return false
+
+    this.cmPerPixel = newCmPerPixel
+    this.pixelsPerCm = 1.0 / newCmPerPixel
+    this.wallWidth = 10.0 * this.pixelsPerCm
+    this.zoomChangedCallbacks.fire(this.getZoomPercent())
+    return true
+  }
+
   /**
    * Zoom + pan for both mouse wheels and trackpads:
    *  - Pinch-to-zoom (browsers tag this as a wheel event with ctrlKey=true) always zooms.
@@ -903,22 +1062,17 @@ export class Floorplanner {
     const screenX = event.clientX - rect.left
     const screenY = event.clientY - rect.top
 
-    const oldCmPerPixel = this.cmPerPixel
     // deltaY > 0 (scroll down / pinch closed) zooms out; deltaY < 0 zooms in
     const rawScale = Math.exp(-deltaY * zoomSensitivity)
-    const newCmPerPixel = Math.min(Math.max(oldCmPerPixel / rawScale, minCmPerPixel), maxCmPerPixel)
-    if (newCmPerPixel === oldCmPerPixel) return
+    const oldCmPerPixel = this.cmPerPixel
+    const newCmPerPixel = oldCmPerPixel / rawScale
+    if (!this.setZoomLevel(newCmPerPixel)) return
 
     // keep the world point currently under the cursor fixed in place
-    const actualScale = oldCmPerPixel / newCmPerPixel
+    const actualScale = oldCmPerPixel / this.cmPerPixel
     this.originX = (screenX + this.originX) * actualScale - screenX
     this.originY = (screenY + this.originY) * actualScale - screenY
 
-    this.cmPerPixel = newCmPerPixel
-    this.pixelsPerCm = 1.0 / newCmPerPixel
-    this.wallWidth = 10.0 * this.pixelsPerCm
-
-    this.zoomChangedCallbacks.fire(this.getZoomPercent())
     this.view.draw()
   }
 
@@ -930,24 +1084,54 @@ export class Floorplanner {
   /** Zooms in/out by a fixed step, centered on the canvas — used by +/- zoom buttons. */
   public zoomBy(factor: number): void {
     const rect = this.canvasElement.getBoundingClientRect()
-    this.mousewheel({
-      preventDefault: () => {},
-      clientX: rect.left + rect.width / 2,
-      clientY: rect.top + rect.height / 2,
-      deltaX: 0,
-      deltaY: factor > 1 ? -120 : 120,
-      deltaMode: 0,
-      ctrlKey: false
-    } as WheelEvent)
+    const screenX = rect.width / 2
+    const screenY = rect.height / 2
+    const oldCmPerPixel = this.cmPerPixel
+    if (!this.setZoomLevel(this.cmPerPixel / factor)) return
+
+    const actualScale = oldCmPerPixel / this.cmPerPixel
+    this.originX = (screenX + this.originX) * actualScale - screenX
+    this.originY = (screenY + this.originY) * actualScale - screenY
+    this.view.draw()
   }
 
   /** Resets to the default zoom level, keeping the plan centered. */
   public resetZoom(): void {
-    this.cmPerPixel = defaultCmPerPixel
-    this.pixelsPerCm = 1.0 / defaultCmPerPixel
-    this.wallWidth = 10.0 * this.pixelsPerCm
+    this.setZoomLevel(defaultCmPerPixel)
     this.resetOrigin()
-    this.zoomChangedCallbacks.fire(this.getZoomPercent())
+    this.view.draw()
+  }
+
+  /** Fits all floorplan corners inside the current canvas. */
+  public fitToView(padding = 56): void {
+    const corners = this.floorplan.getCorners()
+    if (corners.length === 0) {
+      this.resetZoom()
+      return
+    }
+
+    let xMin = Infinity
+    let xMax = -Infinity
+    let yMin = Infinity
+    let yMax = -Infinity
+    corners.forEach((corner) => {
+      if (corner.x < xMin) xMin = corner.x
+      if (corner.x > xMax) xMax = corner.x
+      if (corner.y < yMin) yMin = corner.y
+      if (corner.y > yMax) yMax = corner.y
+    })
+
+    const canvasWidth = Math.max(this.canvasElement.clientWidth, 1)
+    const canvasHeight = Math.max(this.canvasElement.clientHeight, 1)
+    const usableWidth = Math.max(canvasWidth - padding * 2, canvasWidth * 0.4, 1)
+    const usableHeight = Math.max(canvasHeight - padding * 2, canvasHeight * 0.4, 1)
+    const widthCm = Math.max(xMax - xMin, 100)
+    const heightCm = Math.max(yMax - yMin, 100)
+    const requiredCmPerPixel = Math.max(widthCm / usableWidth, heightCm / usableHeight)
+
+    this.setZoomLevel(requiredCmPerPixel)
+    this.originX = (xMin + xMax) / 2 / this.cmPerPixel - canvasWidth / 2
+    this.originY = (yMin + yMax) / 2 / this.cmPerPixel - canvasHeight / 2
     this.view.draw()
   }
 
@@ -955,11 +1139,7 @@ export class Floorplanner {
   public reset(): void {
     this.resizeView()
     this.setMode(floorplannerModes.MOVE)
-    this.cmPerPixel = defaultCmPerPixel
-    this.pixelsPerCm = 1.0 / defaultCmPerPixel
-    this.wallWidth = 10.0 * this.pixelsPerCm
-    this.resetOrigin()
-    this.view.draw()
+    this.fitToView()
   }
 
   /** Resizes the view to fit the container */
