@@ -45,7 +45,7 @@ export default function PublicViewerPage() {
           textureDir: '/models/textures/',
           widget: false,
           enableWheelZoom: true,
-          spin: false // managed manually below, tied to hover, with no permanent lock
+          spin: true // managed manually below, tied to hover, with no permanent lock
         })
         blueprint3dRef.current = blueprint3d
         blueprint3d.three.getController().enabled = false // read-only — no item selection/editing
