@@ -10,7 +10,7 @@ export class GLBLoader {
   constructor(manager?: THREE.LoadingManager) {
     this.manager = manager || THREE.DefaultLoadingManager
     this.dracoLoader = new DRACOLoader(this.manager)
-    this.dracoLoader.setDecoderPath('/draco/')
+    this.dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
     this.loader = new GLTFLoader(this.manager)
     this.loader.setDRACOLoader(this.dracoLoader)
   }
