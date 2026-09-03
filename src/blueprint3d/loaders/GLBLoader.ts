@@ -2,10 +2,6 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 
-/**
- * GLBLoader wrapper for loading GLB/GLTF models with Draco compression support.
- * Provides a similar interface to JSONLoader for easy migration.
- */
 export class GLBLoader {
   private loader: GLTFLoader
   private dracoLoader: DRACOLoader
@@ -13,20 +9,12 @@ export class GLBLoader {
 
   constructor(manager?: THREE.LoadingManager) {
     this.manager = manager || THREE.DefaultLoadingManager
-
-    // Initialize Draco loader
     this.dracoLoader = new DRACOLoader(this.manager)
     this.dracoLoader.setDecoderPath('/draco/')
-
-    // Initialize GLTF loader with Draco support
     this.loader = new GLTFLoader(this.manager)
     this.loader.setDRACOLoader(this.dracoLoader)
   }
 
-  /**
-   * Load a GLB/GLTF file and extract geometry and materials.
-   * Interface matches JSONLoader for compatibility with existing code.
-   */
   load(
     url: string,
     onLoad: (geometry: THREE.BufferGeometry, materials: THREE.Material[]) => void,
@@ -43,30 +31,22 @@ export class GLBLoader {
           onLoad(geometry, materials)
           this.manager.itemEnd(url)
         } catch (e) {
-          console.error('GLBLoader extraction error:', e)
-          if (onError) {
-            onError(e as Error)
-          }
+          console.error(e)
+          if (onError) onError(e as Error)
           this.manager.itemError(url)
           this.manager.itemEnd(url)
         }
       },
       onProgress as (event: ProgressEvent<EventTarget>) => void,
       (error: unknown) => {
-        console.error('GLBLoader load error:', error)
-        if (onError) {
-          onError(error instanceof Error ? error : new Error(String(error)))
-        }
+        console.error(error)
+        if (onError) onError(error instanceof Error ? error : new Error(String(error)))
         this.manager.itemError(url)
         this.manager.itemEnd(url)
       }
     )
   }
 
-  /**
-   * Extract merged geometry and materials from GLTF scene.
-   * GLB models may contain multiple meshes, so we merge them.
-   */
   private extractGeometryAndMaterials(gltf: { scene: THREE.Group }): {
     geometry: THREE.BufferGeometry
     materials: THREE.Material[]
@@ -75,26 +55,20 @@ export class GLBLoader {
     const materials: THREE.Material[] = []
     const materialMap = new Map<THREE.Material, number>()
 
-    // Traverse the scene to find all meshes
     gltf.scene.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        const mesh = child as THREE.Mesh
-
-        // Clone and apply world transform to geometry
+        const mesh = child
         const geom = mesh.geometry.clone()
+        
         mesh.updateWorldMatrix(true, false)
         geom.applyMatrix4(mesh.matrixWorld)
 
-        // Handle materials (single or array)
         const meshMaterials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
 
-        // Update geometry groups to use correct material indices
         if (geom.groups.length === 0) {
-          // No groups defined, create one for the entire geometry
           const matIndex = this.getOrAddMaterial(meshMaterials[0], materials, materialMap)
           geom.addGroup(0, geom.index ? geom.index.count : geom.attributes.position.count, matIndex)
         } else {
-          // Update existing group material indices
           for (const group of geom.groups) {
             const originalMat = meshMaterials[group.materialIndex || 0]
             group.materialIndex = this.getOrAddMaterial(originalMat, materials, materialMap)
@@ -109,53 +83,30 @@ export class GLBLoader {
       throw new Error('No meshes found in GLB file')
     }
 
-    // Merge all geometries
-    let mergedGeometry: THREE.BufferGeometry
+    const mergedGeometry = geometries.length === 1 ? geometries[0] : this.mergeGeometries(geometries)
 
-    if (geometries.length === 1) {
-      mergedGeometry = geometries[0]
-    } else {
-      mergedGeometry = this.mergeGeometries(geometries)
-    }
-
-    // Scale from meters to centimeters (GLB typically uses meters, this project uses cm)
-    // Apply scale factor of 100 to convert m -> cm
-    const scaleFactor = 100
-    mergedGeometry.scale(scaleFactor, scaleFactor, scaleFactor)
-
-    // Ensure bounding box and sphere are computed
+    mergedGeometry.scale(100, 100, 100)
     mergedGeometry.computeBoundingBox()
     mergedGeometry.computeBoundingSphere()
 
-    // Configure materials for visibility and convert to MeshPhongMaterial if needed
     const processedMaterials = materials.map((mat) => {
-      // Convert MeshStandardMaterial to MeshPhongMaterial for better compatibility
-      // with the existing lighting setup (no environment map)
       if (mat instanceof THREE.MeshStandardMaterial) {
-        const phongMat = new THREE.MeshPhongMaterial({
+        return new THREE.MeshPhongMaterial({
           color: mat.color,
-          map: mat.map,
-          normalMap: mat.normalMap,
+          map: mat.map || null,
+          normalMap: mat.normalMap || null,
           emissive: mat.emissive,
-          emissiveMap: mat.emissiveMap,
+          emissiveMap: mat.emissiveMap || null,
           emissiveIntensity: mat.emissiveIntensity,
-          specular: new THREE.Color(0x222222),  // Very subtle specular to avoid moiré
-          shininess: 5,  // Very matte finish
+          specular: new THREE.Color(0x222222),
+          shininess: 5,
           side: THREE.DoubleSide,
           transparent: mat.transparent,
           opacity: mat.opacity,
           alphaTest: mat.alphaTest
         })
-
-        // Copy texture properties
-        if (mat.map) {
-          phongMat.map = mat.map
-        }
-
-        return phongMat
       }
 
-      // For other materials, just configure side and depth
       mat.side = THREE.DoubleSide
       mat.depthTest = true
       mat.depthWrite = true
@@ -165,9 +116,6 @@ export class GLBLoader {
     return { geometry: mergedGeometry, materials: processedMaterials }
   }
 
-  /**
-   * Get existing material index or add new material to array.
-   */
   private getOrAddMaterial(
     material: THREE.Material,
     materials: THREE.Material[],
@@ -182,83 +130,74 @@ export class GLBLoader {
     return index
   }
 
-  /**
-   * Merge multiple geometries into one, preserving material groups.
-   */
   private mergeGeometries(geometries: THREE.BufferGeometry[]): THREE.BufferGeometry {
     const merged = new THREE.BufferGeometry()
-
-    // Collect all attributes
-    const positions: number[] = []
-    const normals: number[] = []
-    const uvs: number[] = []
-    const indices: number[] = []
-    const groups: { start: number; count: number; materialIndex: number }[] = []
-
-    let indexOffset = 0
-    let vertexOffset = 0
+    let vertexCount = 0
+    let indexCount = 0
 
     for (const geom of geometries) {
-      const posAttr = geom.attributes.position
-      const normAttr = geom.attributes.normal
-      const uvAttr = geom.attributes.uv
+      vertexCount += geom.attributes.position.count
+      indexCount += geom.index ? geom.index.count : geom.attributes.position.count
+    }
 
-      // Add positions
-      for (let i = 0; i < posAttr.count; i++) {
-        positions.push(posAttr.getX(i), posAttr.getY(i), posAttr.getZ(i))
+    const positions = new Float32Array(vertexCount * 3)
+    const normals = new Float32Array(vertexCount * 3)
+    const uvs = new Float32Array(vertexCount * 2)
+    const indices = new Uint32Array(indexCount)
+    const groups: { start: number; count: number; materialIndex: number }[] = []
+
+    let vOffset = 0
+    let iOffset = 0
+    let hasNormals = false
+    let hasUvs = false
+
+    for (const geom of geometries) {
+      const pAttr = geom.attributes.position
+      const nAttr = geom.attributes.normal
+      const uAttr = geom.attributes.uv
+      const vCount = pAttr.count
+
+      positions.set(pAttr.array, vOffset * 3)
+
+      if (nAttr) {
+        normals.set(nAttr.array, vOffset * 3)
+        hasNormals = true
       }
 
-      // Add normals
-      if (normAttr) {
-        for (let i = 0; i < normAttr.count; i++) {
-          normals.push(normAttr.getX(i), normAttr.getY(i), normAttr.getZ(i))
-        }
+      if (uAttr) {
+        uvs.set(uAttr.array, vOffset * 2)
+        hasUvs = true
       }
 
-      // Add UVs
-      if (uvAttr) {
-        for (let i = 0; i < uvAttr.count; i++) {
-          uvs.push(uvAttr.getX(i), uvAttr.getY(i))
-        }
-      }
+      const geomIndexCount = geom.index ? geom.index.count : vCount
 
-      // Add indices with offset
       if (geom.index) {
-        const indexArray = geom.index.array
-        for (let i = 0; i < indexArray.length; i++) {
-          indices.push(indexArray[i] + vertexOffset)
+        for (let i = 0; i < geomIndexCount; i++) {
+          indices[iOffset + i] = geom.index.getX(i) + vOffset
         }
       } else {
-        // Generate indices for non-indexed geometry
-        for (let i = 0; i < posAttr.count; i++) {
-          indices.push(i + vertexOffset)
+        for (let i = 0; i < geomIndexCount; i++) {
+          indices[iOffset + i] = vOffset + i
         }
       }
 
-      // Add groups with offset
       for (const group of geom.groups) {
         groups.push({
-          start: group.start + indexOffset,
+          start: group.start + iOffset,
           count: group.count,
           materialIndex: group.materialIndex || 0
         })
       }
 
-      indexOffset += geom.index ? geom.index.count : posAttr.count
-      vertexOffset += posAttr.count
+      vOffset += vCount
+      iOffset += geomIndexCount
     }
 
-    // Set attributes
-    merged.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-    if (normals.length > 0) {
-      merged.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3))
-    }
-    if (uvs.length > 0) {
-      merged.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
-    }
-    merged.setIndex(indices)
+    merged.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+    if (hasNormals) merged.setAttribute('normal', new THREE.BufferAttribute(normals, 3))
+    if (hasUvs) merged.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
+    merged.setIndex(new THREE.BufferAttribute(indices, 1))
 
-    // Set groups
     for (const group of groups) {
       merged.addGroup(group.start, group.count, group.materialIndex)
     }
@@ -266,9 +205,6 @@ export class GLBLoader {
     return merged
   }
 
-  /**
-   * Dispose of the Draco loader to free resources.
-   */
   dispose(): void {
     this.dracoLoader.dispose()
   }
